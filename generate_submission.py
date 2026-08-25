@@ -11,15 +11,13 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
-
 from vera.engine.context_store import ContextStore
-from vera.engine.conversation import ConversationStore
 from vera.engine.fact_builder import FactPacketBuilder
 from vera.engine.llm_writer import LLMWriter
 from vera.engine.message_families import get_family
-from vera.engine.suppression import SuppressionEngine
 from vera.engine.validator import validate
+
+load_dotenv(override=True)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -74,8 +72,6 @@ def main():
         return
 
     ctx = ContextStore()
-    conv_store = ConversationStore()
-    suppression = SuppressionEngine()
     fact_builder = FactPacketBuilder()
     writer = LLMWriter(
         api_key=os.environ.get("GEMINI_API_KEY", ""),
