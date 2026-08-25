@@ -72,20 +72,21 @@ class ReplyBody(BaseModel):
 
 
 # =============================================================================
-# ENDPOINTS
+# ENDPOINTS (Supporting both GET and HEAD for cloud/uptime probes)
 # =============================================================================
 
-@app.get("/favicon.ico", include_in_schema=False)
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
 async def favicon():
     return Response(status_code=204)
 
 
-@app.get("/health")
-def health():
+@app.api_route("/health", methods=["GET", "HEAD"])
+@app.api_route("/healthz", methods=["GET", "HEAD"])
+async def health():
     return {"status": "ok"}
 
 
-@app.get("/v1/healthz")
+@app.api_route("/v1/healthz", methods=["GET", "HEAD"])
 async def healthz():
     """Liveness probe. Returns context counts per scope."""
     counts = orchestrator.ctx.count_by_scope()
@@ -199,7 +200,7 @@ async def teardown():
 # ROOT
 # =============================================================================
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "service": "Vera Merchant Growth Message Engine",
