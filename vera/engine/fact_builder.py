@@ -215,7 +215,6 @@ class FactPacketBuilder:
                 source = item.get("source", "")
                 trial_n = item.get("trial_n")
                 segment = item.get("patient_segment", "")
-                summary = item.get("summary", "")
                 actionable = item.get("actionable", "")
                 if title:
                     add_fn(f"Research finding: {title}", f"category.digest.{item_id}.title")
@@ -287,7 +286,6 @@ class FactPacketBuilder:
         elif kind == "ipl_match_today":
             match = payload.get("match", "")
             venue = payload.get("venue", "")
-            match_time = payload.get("match_time_iso", "")
             if match:
                 add_fn(f"IPL match today: {match} at {venue}", "trigger.payload.match")
 
@@ -324,7 +322,6 @@ class FactPacketBuilder:
         elif kind == "winback_eligible":
             days_exp = payload.get("days_since_expiry")
             lapsed = payload.get("lapsed_customers_added_since_expiry")
-            dip = payload.get("perf_dip_pct")
             if days_exp:
                 add_fn(f"Subscription expired {days_exp} days ago", "trigger.payload.days_since_expiry")
             if lapsed:

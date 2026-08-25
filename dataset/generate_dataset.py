@@ -223,12 +223,14 @@ def expand_triggers(seeds: list[dict], merchants: list[dict], customers: list[di
     ]
     for kind, source, scope, urgency in additional_kinds:
         for _ in range(5):  # 5 of each kind
-            if next_idx > 100: break
+            if next_idx > 100:
+                break
             m = rnd.choice(merchants)
             cust = None
             if scope == "customer":
                 m_customers = [c for c in customers if c["merchant_id"] == m["merchant_id"]]
-                if not m_customers: continue
+                if not m_customers:
+                    continue
                 cust = rnd.choice(m_customers)
             expanded.append({
                 "id": f"trg_{next_idx:03d}_{kind}_{m['merchant_id'][:20]}",
@@ -275,8 +277,10 @@ def write_test_pairs(out_dir: Path, triggers, rnd: random.Random):
             pairs.append({"test_id": f"T{test_id:02d}", "trigger_id": t["id"],
                           "merchant_id": t["merchant_id"], "customer_id": t.get("customer_id")})
             test_id += 1
-            if len(pairs) >= 30: break
-        if len(pairs) >= 30: break
+            if len(pairs) >= 30:
+                break
+        if len(pairs) >= 30:
+            break
     with open(out_dir / "test_pairs.json", "w") as f:
         json.dump({"pairs": pairs[:30]}, f, indent=2)
 
