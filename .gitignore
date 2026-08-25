@@ -1,0 +1,37 @@
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Internal Handoff & Prompt / PRD Docs
+UPDATE/
+VERA_PRD.md
+challenge-brief.md
+challenge-testing-brief.md
+engagement-design.md
+engagement-research.md
+
+# Virtual Environment & Packages
+venv/
+env/
+ENV/
+.venv/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Temp
+*.log
+.cache/
+.clario/
+.DS_Store
+Thumbs.db
+.system_generated/
+scratch/
