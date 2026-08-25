@@ -75,6 +75,11 @@ class ReplyBody(BaseModel):
 # ENDPOINTS
 # =============================================================================
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/v1/healthz")
 async def healthz():
     """Liveness probe. Returns context counts per scope."""
