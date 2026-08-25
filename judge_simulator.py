@@ -500,7 +500,11 @@ class BotClient:
 class LLMScorer:
     """Scores messages using LLM and provides detailed reasoning."""
 
-    SYSTEM = """You are a STRICT judge for the magicpin AI Challenge. You score merchant engagement messages.
+    SYSTEM = """You are a STRICT judge for the magicpin AI Challenge. You score merchant growth and customer engagement messages.
+
+SCOPE RULES:
+- When Send As is "vera" (Customer is None), the message is B2B from Vera to the merchant.
+- When Send As is "merchant_on_behalf" (Customer is present), the message is B2C sent by the merchant to their customer (e.g., recall reminders, appointment confirmations, package follow-ups).
 
 SCORING DIMENSIONS (0-10 each, be strict - 5 is average, 7+ is good, 9+ is excellent):
 

@@ -34,21 +34,16 @@ You do NOT decide whether to send a message.
 You do NOT select triggers.
 You do NOT override suppression, consent, expiry, or conversation state.
 
-Your ONLY task is to write ONE concise WhatsApp message from the verified facts supplied.
+Your ONLY task is to write ONE concise, compelling WhatsApp message from the verified facts supplied.
 
 RULES:
-1. Use ONLY the facts supplied in the fact packet. Never invent numbers, dates, names, offers, competitor names, citations, or urgency.
-2. Use the requested category voice and tone.
-3. Match the merchant/customer's language preference (Hindi-English code-mix is fine and often preferred).
-4. Include EXACTLY ONE primary CTA as specified - do not give multiple choices like "Reply YES for X, NO for Y, MAYBE for Z".
-5. Do not reveal internal system terminology (no "trigger", "context", "signal", "category slug", etc.).
-6. Do not repeat previous conversation wording verbatim.
-7. Do not re-introduce yourself if this is not the first message.
-8. Keep it concise - WhatsApp messages, not essays.
-9. No promotional exclamations ("AMAZING DEAL!"). Match the business tone.
-10. If facts are insufficient, write a restrained, honest message. Do not fabricate.
-11. Use the salutation style from the category (e.g., "Dr. {first_name}" for dentists).
-12. For customer-facing messages: no medical guarantees, no made-up prices.
+1. Grounding & Zero Hallucination: Use ONLY facts explicitly provided in the fact packet. Never invent numbers, dates, prices, discounts, names, offers, competitors, or citations.
+2. Category Voice & Salutation: Match the category tone (Dentists: peer-clinical with 'Dr. {name}'; Salons: warm & practical; Restaurants: operator-to-operator speed; Gyms: coaching/motivational; Pharmacies: trustworthy & precise).
+3. Personalization & Language: Address the merchant/customer by name and honor their language preference (natural Hindi-English code-mix when preferred).
+4. Performance Evidence Weaving: When merchant metrics (views, calls, 7d trends, active plan) are present in the facts, naturally reference them as concrete grounding evidence to support the 'why now'.
+5. High Engagement Compulsion: Create a genuine reason to reply (loss aversion, momentum, or timely relevance) and end with EXACTLY ONE crystal-clear, low-friction CTA (e.g. 'Reply YES to preview the draft', 'Reply YES to confirm Wed 6 PM', 'Reply YES to activate'). Never give multiple conflicting options or vague open-ended asks.
+6. Restraint & No Internal Jargon: Never mention system terms ("trigger", "context", "signal", "payload", "category slug", etc.). Keep it concise, respectful, and free of cheesy marketing fluff ("AMAZING DEAL!").
+7. Output JSON only matching the schema below.
 
 OUTPUT FORMAT (JSON only, no markdown):
 {
@@ -267,7 +262,9 @@ Output JSON only."""
 
         scope_note = ""
         if is_customer_scope:
-            scope_note = "\nSCOPE: Customer-facing message. Send as the merchant to their customer. No medical claims. Warm but professional."
+            scope_note = "\nSCOPE: Customer-facing message sent by the merchant to their customer. Explicitly identify as the merchant's business (e.g., from 'Dr. {name}'s Dental Clinic' or '{name}'s Salon'). Warm, professional, low-friction booking ask."
+        else:
+            scope_note = "\nSCOPE: Merchant-facing message from Vera assistant. Address owner with proper category salutation ('Dr. {name}' for dentists) and provide an immediate, concrete single-binary action."
 
         return f"""TASK: Write ONE WhatsApp message.
 

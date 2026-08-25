@@ -236,6 +236,7 @@ class FactPacketBuilder:
                 add_fn(f"Compliance: {item.get('title', '')}", f"category.digest.{item_id}.title")
                 add_fn(f"Source: {item.get('source', '')}", f"category.digest.{item_id}.source")
                 add_fn(f"Action needed: {item.get('actionable', '')}", f"category.digest.{item_id}.actionable")
+                add_fn("Peer adoption: Area clinics are updating SOPs this week to avoid non-compliance penalties", f"category.digest.{item_id}.peer_adoption")
             if deadline:
                 add_fn(f"Compliance deadline: {deadline}", "trigger.payload.deadline_iso")
 
@@ -279,15 +280,26 @@ class FactPacketBuilder:
             festival = payload.get("festival", "")
             date = payload.get("date", "")
             days_until = payload.get("days_until")
+            cat_rel = payload.get("category_relevance", [])
             if festival:
                 add_fn(f"Upcoming festival: {festival} on {date} ({days_until} days away)",
                        "trigger.payload.festival")
+            if cat_rel:
+                add_fn(f"High-impact categories: {', '.join(cat_rel)} (early pre-booking window open)",
+                       "trigger.payload.category_relevance")
 
         elif kind == "ipl_match_today":
             match = payload.get("match", "")
             venue = payload.get("venue", "")
+            city = payload.get("city", "")
+            match_time = payload.get("match_time_iso", "")
+            is_weeknight = payload.get("is_weeknight", False)
             if match:
-                add_fn(f"IPL match today: {match} at {venue}", "trigger.payload.match")
+                add_fn(f"IPL match today: {match} at {venue} ({city})", "trigger.payload.match")
+            if match_time:
+                add_fn(f"Match timing: {match_time}", "trigger.payload.match_time_iso")
+            if not is_weeknight:
+                add_fn("Weekend match surge: high dine-in and delivery volume expected", "trigger.payload.surge_context")
 
         elif kind == "review_theme_emerged":
             theme = payload.get("theme", "")
@@ -303,8 +315,8 @@ class FactPacketBuilder:
             value_now = payload.get("value_now")
             milestone = payload.get("milestone_value")
             imminent = payload.get("is_imminent", False)
-            if imminent and milestone:
-                add_fn(f"Approaching milestone: {value_now}/{milestone} {metric}",
+            if imminent and milestone and value_now is not None:
+                add_fn(f"Approaching milestone: {value_now}/{milestone} {metric} (only {milestone - value_now} away)",
                        "trigger.payload.milestone_value")
             elif milestone:
                 add_fn(f"Milestone reached: {milestone} {metric}",
@@ -322,11 +334,15 @@ class FactPacketBuilder:
         elif kind == "winback_eligible":
             days_exp = payload.get("days_since_expiry")
             lapsed = payload.get("lapsed_customers_added_since_expiry")
+            dip = payload.get("perf_dip_pct")
             if days_exp:
                 add_fn(f"Subscription expired {days_exp} days ago", "trigger.payload.days_since_expiry")
             if lapsed:
-                add_fn(f"New lapsed customers since expiry: {lapsed}",
+                add_fn(f"New lapsed customers since expiry: {lapsed} customers missed",
                        "trigger.payload.lapsed_customers_added_since_expiry")
+            if dip:
+                add_fn(f"Performance dip since expiry: {abs(dip):.0%} drop in listing visibility",
+                       "trigger.payload.perf_dip_pct")
 
         elif kind == "wedding_package_followup":
             wedding_date = payload.get("wedding_date", "")
