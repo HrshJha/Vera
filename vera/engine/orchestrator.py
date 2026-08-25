@@ -61,26 +61,33 @@ class Orchestrator:
 
         # Rank candidates deterministically
         candidates = self.ranker.rank(available_trigger_ids, now_iso)
+        logger.info(f"[tick] Ranker returned {len(candidates)} candidates from {len(available_trigger_ids)} triggers")
         if not candidates:
+            logger.warning(f"[tick] No candidates passed hard gates from {len(available_trigger_ids)} triggers")
             return []
 
-        # Process top candidates — limit to 4 to conserve API quota
-        top_candidates = candidates[:4]
+        # Process top candidates — respect challenge limit of 20 actions per tick
+        top_candidates = candidates[:20]
+        logger.info(f"[tick] Processing top {len(top_candidates)} candidates (limited to 20)")
         futures = {self._executor.submit(self._compose_action, cand): cand for cand in top_candidates}
         
         actions = []
+        skipped = 0
         try:
             for fut in concurrent.futures.as_completed(futures, timeout=120.0):
                 try:
                     action = fut.result()
                     if action:
                         actions.append(action)
+                    else:
+                        skipped += 1
                 except Exception as e:
                     cand = futures[fut]
                     logger.error(f"[tick] Parallel action failed for {cand.trigger_id}: {e}")
         except concurrent.futures.TimeoutError:
-            logger.warning("[tick] Parallel composition hit 10s timeout safeguard; returning partial actions")
+            logger.warning("[tick] Parallel composition hit 120s timeout safeguard; returning partial actions")
 
+        logger.info(f"[tick] Generated {len(actions)} actions, skipped {skipped} candidates")
         return actions
 
     # ------------------------------------------------------------------
@@ -253,6 +260,9 @@ class Orchestrator:
             owner = identity.get("owner_first_name", identity.get("name", ""))
             locality = identity.get("locality", "")
 
+            # Track which model was used for this message
+            model_used = getattr(self.writer, '_last_model_used', 'unknown')
+
             action = {
                 "conversation_id": conv_id,
                 "merchant_id": merchant_id,
@@ -265,6 +275,7 @@ class Orchestrator:
                 "cta": cta,
                 "suppression_key": suppression_key,
                 "rationale": rationale,
+                "model_used": model_used,
             }
             return action
 

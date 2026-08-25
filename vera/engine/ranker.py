@@ -117,8 +117,12 @@ class SignalRanker:
 
     def _evaluate_trigger(self, trg_id: str, sim_now: float) -> Optional[Candidate]:
         """Evaluate a single trigger through hard gates and scoring. Returns None to skip."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         trigger = self._ctx.get_trigger(trg_id)
         if trigger is None:
+            logger.debug(f"[gate_reject] {trg_id}: trigger_not_found")
             raise HardGateError(f"trigger_not_found:{trg_id}")
 
         # --- HARD GATES ---
@@ -128,31 +132,38 @@ class SignalRanker:
         if expires_at:
             exp_ts = _parse_iso(expires_at)
             if sim_now > exp_ts:
+                logger.debug(f"[gate_reject] {trg_id}: trigger_expired")
                 raise HardGateError(f"trigger_expired:{trg_id}")
 
         # 2. Resolve merchant
         merchant_id = trigger.get("merchant_id")
         if not merchant_id:
+            logger.debug(f"[gate_reject] {trg_id}: no_merchant_id")
             raise HardGateError(f"no_merchant_id:{trg_id}")
 
         merchant = self._ctx.get_merchant(merchant_id)
         if merchant is None:
+            logger.debug(f"[gate_reject] {trg_id}: merchant_not_found:{merchant_id}")
             raise HardGateError(f"merchant_not_found:{merchant_id}")
 
         # 3. Resolve category
         category = self._ctx.get_category_for_merchant(merchant_id)
         if category is None:
+            logger.debug(f"[gate_reject] {trg_id}: category_not_found_for:{merchant_id}")
             raise HardGateError(f"category_not_found_for:{merchant_id}")
 
         # 4. Suppression check
         suppression_key = trigger.get("suppression_key", trg_id)
         if self._sup.is_suppressed(suppression_key):
+            logger.debug(f"[gate_reject] {trg_id}: suppressed:{suppression_key}")
             raise HardGateError(f"suppressed:{suppression_key}")
 
         if self._sup.is_declined(merchant_id):
+            logger.debug(f"[gate_reject] {trg_id}: merchant_declined:{merchant_id}")
             raise HardGateError(f"merchant_declined:{merchant_id}")
 
         if self._sup.is_trigger_sent(trg_id):
+            logger.debug(f"[gate_reject] {trg_id}: trigger_sent:{trg_id}")
             raise HardGateError(f"trigger_sent:{trg_id}")
 
         # 5. Customer scope gates
@@ -161,24 +172,29 @@ class SignalRanker:
         if customer_id:
             customer = self._ctx.get_customer(customer_id)
             if customer is None:
+                logger.debug(f"[gate_reject] {trg_id}: customer_not_found:{customer_id}")
                 raise HardGateError(f"customer_not_found:{customer_id}")
 
             # Verify merchant relationship
             if customer.get("merchant_id") != merchant_id:
+                logger.debug(f"[gate_reject] {trg_id}: customer_merchant_mismatch:{customer_id}")
                 raise HardGateError(f"customer_merchant_mismatch:{customer_id}")
 
             # Consent check for customer-scope triggers
             consent_scope = customer.get("consent", {}).get("scope", [])
             kind = trigger.get("kind", "")
             if not _consent_covers_trigger(kind, consent_scope):
+                logger.debug(f"[gate_reject] {trg_id}: no_consent:{customer_id}:{kind}")
                 raise HardGateError(f"no_consent:{customer_id}:{kind}")
 
         # 6. Existing conversation checks
         active_convs = self._conv.active_convs_for_merchant(merchant_id)
         for conv in active_convs:
             if conv.trigger_id == trg_id:
+                logger.debug(f"[gate_reject] {trg_id}: trigger_already_in_flight")
                 raise HardGateError(f"trigger_already_in_flight:{trg_id}")
             if conv.state == ConvState.DECLINED:
+                logger.debug(f"[gate_reject] {trg_id}: merchant_declined_in_conv:{merchant_id}")
                 raise HardGateError(f"merchant_declined_in_conv:{merchant_id}")
             if conv.state == ConvState.ENDED:
                 continue
@@ -187,6 +203,8 @@ class SignalRanker:
         cand = Candidate(trg_id, trigger, merchant_id, merchant, category,
                          customer_id, customer)
         cand.priority = self._score(cand, sim_now)
+
+        logger.debug(f"[gate_pass] {trg_id}: priority={cand.priority:.2f}")
 
         return cand
 

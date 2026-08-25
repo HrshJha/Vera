@@ -163,6 +163,7 @@ class LLMWriter:
 
     def __init__(self, api_key: Optional[str] = None, model: str = "") -> None:
         self.model_name = model or os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+        self._last_model_used: str = "template_fallback"
         self._cache: Dict[str, dict] = _load_disk_cache()  # persistent cache
         # Reload keys in pool if needed
         key_pool.load_keys()
@@ -344,6 +345,7 @@ Write the message now. Output JSON only."""
                         key_state.mark_success()
                         parsed = self._parse_json_response(text)
                         if parsed:
+                            self._last_model_used = model_id
                             return parsed
 
                 except Exception as e:
@@ -410,6 +412,7 @@ Write the message now. Output JSON only."""
                 parsed = self._parse_json_response(content)
                 if parsed:
                     logger.info(f"[LLMWriter] OpenRouter success with model {model_name}")
+                    self._last_model_used = f"openrouter/{model_name}"
                     return parsed
             except Exception as e:
                 logger.warning(f"[LLMWriter] OpenRouter model {model_name} failed: {e}")
@@ -515,6 +518,7 @@ Write the message now. Output JSON only."""
         else:
             body = f"{name}, quick update from Vera — want to know what's happening with your profile?"
 
+        self._last_model_used = "template_fallback"
         return {
             "body": body,
             "cta": cta,
@@ -523,6 +527,7 @@ Write the message now. Output JSON only."""
         }
 
     def _reply_template_fallback(self, intent: str, merchant_name: str) -> dict:
+        self._last_model_used = "template_fallback"
         if intent == "accept":
             return {
                 "body": "Great! I'll get that set up for you right now. Give me a moment.",

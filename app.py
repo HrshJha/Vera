@@ -31,6 +31,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
+# Enable DEBUG for ranker to see gate rejections
+logging.getLogger("vera.engine.ranker").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Initialize Vera orchestrator (single global instance - stateful by design)
