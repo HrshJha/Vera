@@ -219,6 +219,7 @@ class GeminiProvider(LLMProvider):
         return f"Gemini ({self.model}) [Pool: {self.key_pool.total_keys} key(s)]"
 
     def complete(self, prompt: str, system: str = None) -> str:
+        # pyrefly: ignore [missing-import]
         from google.genai import types
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
 

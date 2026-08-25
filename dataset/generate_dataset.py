@@ -175,7 +175,8 @@ def expand_customers(seeds: list[dict], merchants: list[dict], rnd: random.Rando
     for m in merchants:
         cur = have_per_merchant.get(m["merchant_id"], 0)
         for i in range(max(0, target_per_merchant - cur)):
-            if next_idx > 200 + len(seeds): break
+            if next_idx > 200 + len(seeds):
+                break
             name = rnd.choice(customer_names)
             cid = f"c_{next_idx:03d}_{name.lower()}_for_{m['merchant_id']}"
             visits = rnd.randint(1, 12)

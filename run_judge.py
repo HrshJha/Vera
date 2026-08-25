@@ -27,7 +27,7 @@ if not gemini_key:
     sys.exit(1)
 
 # Patch the judge_simulator module config before importing
-import judge_simulator as js
+import judge_simulator as js  # noqa: E402
 
 # Override config
 js.BOT_URL = "http://localhost:8080"

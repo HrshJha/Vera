@@ -21,6 +21,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from vera.engine.orchestrator import Orchestrator
+
 # Load environment variables from .env if present
 load_dotenv(override=True)
 
@@ -32,8 +34,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize Vera orchestrator (single global instance - stateful by design)
-from vera.engine.orchestrator import Orchestrator
-
 orchestrator = Orchestrator()
 START_TIME = time.time()
 

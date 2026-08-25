@@ -306,6 +306,7 @@ Write the message now. Output JSON only."""
         Call Gemini using automatic multi-key and multi-model rotation/failover.
         If a key/model hits 429 or quota, marks cooldown and tries the next model/key.
         """
+        # pyrefly: ignore [missing-import]
         from google.genai import types
 
         total_keys = key_pool.total_keys
@@ -348,10 +349,6 @@ Write the message now. Output JSON only."""
                 except Exception as e:
                     err_str = str(e)
                     if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower():
-                        retry_sec = 45.0
-                        m = re.search(r'retryDelay.*?(\d+)s', err_str)
-                        if m:
-                            retry_sec = float(m.group(1)) + 2.0
                         logger.info(
                             f"[LLMWriter] Model {model_id} hit quota. Trying next candidate model..."
                         )
