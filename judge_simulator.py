@@ -463,7 +463,7 @@ class BotClient:
                 return None, "Unauthorized", latency
             try:
                 return json.loads(e.read().decode("utf-8")), None, latency
-            except:
+            except Exception:
                 return None, f"HTTP {e.code}", latency
         except Exception as e:
             return None, str(e), (time.time() - start) * 1000
