@@ -59,6 +59,10 @@ TEST_SCENARIO = os.environ.get("TEST_SCENARIO", "warmup")
 #   DATASET_ROOT=dataset/expanded TEST_SCENARIO=full_evaluation python -u judge_simulator.py
 DATASET_ROOT = os.environ.get("DATASET_ROOT", "dataset")
 
+# Model the JUDGE uses for scoring (separate from GEMINI_MODEL used by the bot).
+# Use a fast, stable lite model here; the bot's primary model is set via GEMINI_MODEL.
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "gemini-3.5-flash-lite")
+
 # =============================================================================
 # END OF CONFIGURATION
 # =============================================================================
@@ -218,7 +222,9 @@ class GeminiProvider(LLMProvider):
         from vera.engine.key_rotator import key_pool
         self.key_pool = key_pool
         self.key_pool.load_keys()
-        self.model = model or os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        # Use JUDGE_MODEL for scoring, NOT GEMINI_MODEL (which is the bot's primary model).
+        # This prevents judge hangs when the bot's primary model has API load issues.
+        self.model = model or JUDGE_MODEL
 
     def name(self) -> str:
         return f"Gemini ({self.model}) [Pool: {self.key_pool.total_keys} key(s)]"
@@ -395,7 +401,8 @@ def create_provider() -> LLMProvider:
     providers = {
         "openai": lambda: OpenAIProvider(LLM_API_KEY, LLM_MODEL),
         "anthropic": lambda: AnthropicProvider(LLM_API_KEY, LLM_MODEL),
-        "gemini": lambda: GeminiProvider(LLM_API_KEY, LLM_MODEL),
+        # Gemini judge uses JUDGE_MODEL (stable lite), NOT the bot's GEMINI_MODEL
+        "gemini": lambda: GeminiProvider(LLM_API_KEY, JUDGE_MODEL),
         "deepseek": lambda: DeepSeekProvider(LLM_API_KEY, LLM_MODEL),
         "groq": lambda: GroqProvider(LLM_API_KEY, LLM_MODEL),
         "ollama": lambda: OllamaProvider(LLM_MODEL, OLLAMA_URL),
@@ -798,7 +805,9 @@ class JudgeSimulator:
 
         print_section("TICK TEST")
 
-        trigs = list(self.dataset.triggers.keys())[:3]
+        # Use 15 triggers for a statistically meaningful sample across trigger families.
+        # phase2_short previously used only 3, which is too small to catch family-level issues.
+        trigs = list(self.dataset.triggers.keys())[:15]
         for tid in trigs:
             self.client.push_context("trigger", tid, 1, self.dataset.triggers[tid])
 
