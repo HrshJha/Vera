@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "clario": {
+      "type": "stdio",
+      "command": "/Users/harshkumarjha/.clario/runtime/node-darwin-arm64",
+      "args": [
+        "/Users/harshkumarjha/.clario/mcp-server/index.js"
+      ],
+      "env": {
+        "CLAR_WORKSPACE": "/Users/harshkumarjha/Desktop/magicpin-ai-challenge",
+        "CLAR_API_URL": "https://hub.clario.chat",
+        "PATH": "/Users/harshkumarjha/.clario/runtime:/Users/harshkumarjha/.local/bin:/Users/harshkumarjha/.antigravity-ide/antigravity-ide/bin:/Users/harshkumarjha/.opencode/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/Users/harshkumarjha/.local/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/Users/harshkumarjha/.antigravity/antigravity/bin:/opt/anaconda3/bin:/opt/anaconda3/condabin:/Users/harshkumarjha/.local/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin:/Users/harshkumarjha/.nvm/versions/node/v24.14.1/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin"
+      }
+    }
+  }
+}
