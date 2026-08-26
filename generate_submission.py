@@ -85,10 +85,9 @@ def main():
         pairs_data = json.load(f)
     pairs = pairs_data.get("pairs", [])
 
-    logger.info(f"Processing {len(pairs)} canonical test pairs...")
-    results = []
-
-    for item in pairs:
+    logger.info(f"Processing {len(pairs)} canonical test pairs concurrently...")
+    
+    def process_pair(item: dict) -> dict:
         test_id = item["test_id"]
         tid = item["trigger_id"]
         mid = item["merchant_id"]
@@ -119,7 +118,7 @@ def main():
         cta = output.get("cta", family.preferred_cta)
         rationale = output.get("rationale", f"Grounded message for {kind}")
 
-        submission_entry = {
+        entry = {
             "test_id": test_id,
             "body": body,
             "cta": cta,
@@ -127,8 +126,23 @@ def main():
             "suppression_key": suppression_key,
             "rationale": rationale,
         }
-        results.append(submission_entry)
         logger.info(f"Generated {test_id}: {body[:60]}...")
+        return entry
+
+    import concurrent.futures
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        future_map = {executor.submit(process_pair, p): p for p in pairs}
+        for future in concurrent.futures.as_completed(future_map):
+            try:
+                res = future.result()
+                results.append(res)
+            except Exception as e:
+                p = future_map[future]
+                logger.error(f"Error processing {p.get('test_id')}: {e}")
+
+    # Keep original order by test_id
+    results.sort(key=lambda r: r["test_id"])
 
     with open(output_file, "w") as f:
         for r in results:
