@@ -51,8 +51,13 @@ LLM_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
 # For Ollama only: local server URL
 OLLAMA_URL = "http://localhost:11434"
 
-# Which test to run by default: "warmup", "phase2_short", "auto_reply_hell", "intent_transition", "hostile", "all"
+# Which test to run by default: "warmup", "phase2_short", "auto_reply_hell", "intent_transition", "hostile", "all", "full_evaluation"
 TEST_SCENARIO = os.environ.get("TEST_SCENARIO", "warmup")
+
+# Dataset root: set to "dataset/expanded" to run against the full 50/200/100 dataset.
+# Default is "dataset" (seed files). Example:
+#   DATASET_ROOT=dataset/expanded TEST_SCENARIO=full_evaluation python -u judge_simulator.py
+DATASET_ROOT = os.environ.get("DATASET_ROOT", "dataset")
 
 # =============================================================================
 # END OF CONFIGURATION
@@ -60,7 +65,7 @@ TEST_SCENARIO = os.environ.get("TEST_SCENARIO", "warmup")
 
 # Constants
 TIMEOUT_LLM = 45
-DATASET_DIR = Path(__file__).parent / "dataset"
+DATASET_DIR = Path(__file__).parent / DATASET_ROOT
 
 # =============================================================================
 # TERMINAL OUTPUT
@@ -416,11 +421,53 @@ class DatasetLoader:
         self.customers = {}
         self.triggers = {}
 
-    def load(self) -> bool:
+    def _load_expanded(self) -> bool:
+        """Load from dataset/expanded/ — individual JSON files per entity."""
+        try:
+            # Categories (shared: look one level up if needed)
+            cat_dir = self.dataset_dir / "categories"
+            if not cat_dir.exists():
+                cat_dir = self.dataset_dir.parent / "categories"
+            if cat_dir.exists():
+                for f in sorted(cat_dir.glob("*.json")):
+                    data = json.load(open(f))
+                    self.categories[data.get("slug", f.stem)] = data
+
+            # Merchants — one file per merchant
+            m_dir = self.dataset_dir / "merchants"
+            if m_dir.exists():
+                for f in sorted(m_dir.glob("*.json")):
+                    data = json.load(open(f))
+                    mid = data.get("merchant_id", f.stem)
+                    self.merchants[mid] = data
+
+            # Customers — one file per customer
+            c_dir = self.dataset_dir / "customers"
+            if c_dir.exists():
+                for f in sorted(c_dir.glob("*.json")):
+                    data = json.load(open(f))
+                    cid = data.get("customer_id", f.stem)
+                    self.customers[cid] = data
+
+            # Triggers — one file per trigger
+            t_dir = self.dataset_dir / "triggers"
+            if t_dir.exists():
+                for f in sorted(t_dir.glob("*.json")):
+                    data = json.load(open(f))
+                    tid = data.get("id", f.stem)
+                    self.triggers[tid] = data
+
+            return True
+        except Exception as e:
+            print_fail(f"Expanded dataset load error: {e}")
+            return False
+
+    def _load_seed(self) -> bool:
+        """Load from seed JSON array files (legacy / fast debugging mode)."""
         try:
             cat_dir = self.dataset_dir / "categories"
             if cat_dir.exists():
-                for f in cat_dir.glob("*.json"):
+                for f in sorted(cat_dir.glob("*.json")):
                     data = json.load(open(f))
                     self.categories[data.get("slug", f.stem)] = data
 
@@ -439,8 +486,32 @@ class DatasetLoader:
                             storage[item[key]] = item
             return True
         except Exception as e:
-            print_fail(f"Dataset load error: {e}")
+            print_fail(f"Seed dataset load error: {e}")
             return False
+
+    def load(self) -> bool:
+        """Auto-detect expanded vs seed mode from directory structure."""
+        # Expanded mode: has merchants/, customers/, triggers/ subdirectories
+        has_expanded_dirs = (
+            (self.dataset_dir / "merchants").exists()
+            and (self.dataset_dir / "triggers").exists()
+        )
+        if has_expanded_dirs:
+            mode = "expanded"
+            ok = self._load_expanded()
+        else:
+            mode = "seed"
+            ok = self._load_seed()
+
+        if ok:
+            print_info(
+                f"Dataset mode: {mode.upper()} | "
+                f"categories={len(self.categories)} | "
+                f"merchants={len(self.merchants)} | "
+                f"customers={len(self.customers)} | "
+                f"triggers={len(self.triggers)}"
+            )
+        return ok
 
 
 class BotClient:

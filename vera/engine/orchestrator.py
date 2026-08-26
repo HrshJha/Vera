@@ -70,11 +70,12 @@ class Orchestrator:
         top_candidates = candidates[:20]
         logger.info(f"[tick] Processing top {len(top_candidates)} candidates (limited to 20)")
         futures = {self._executor.submit(self._compose_action, cand): cand for cand in top_candidates}
-        
+
+        TICK_BUDGET_SEC = 25.0  # Internal budget; spec gives 30s, leaving 5s margin
         actions = []
         skipped = 0
         try:
-            for fut in concurrent.futures.as_completed(futures, timeout=120.0):
+            for fut in concurrent.futures.as_completed(futures, timeout=TICK_BUDGET_SEC):
                 try:
                     action = fut.result()
                     if action:
@@ -85,7 +86,12 @@ class Orchestrator:
                     cand = futures[fut]
                     logger.error(f"[tick] Parallel action failed for {cand.trigger_id}: {e}")
         except concurrent.futures.TimeoutError:
-            logger.warning("[tick] Parallel composition hit 120s timeout safeguard; returning partial actions")
+            completed = sum(1 for f in futures if f.done())
+            pending = len(futures) - completed
+            logger.warning(
+                f"[tick] Hit 25s budget; returning {len(actions)} completed actions, "
+                f"{pending} pending futures abandoned (spec limit: 30s)"
+            )
 
         logger.info(f"[tick] Generated {len(actions)} actions, skipped {skipped} candidates")
         return actions
